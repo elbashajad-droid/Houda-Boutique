@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Houda Boutique</title>
-    <!-- Secure Shopify-style login script connection -->
     <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
     <style>
         body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; background-color: #ffffff; color: #3d342e; }
@@ -14,6 +13,8 @@
         nav button.active { color: #4a3b32; font-weight: bold; border-bottom: 2px solid #4a3b32; }
         .page { display: none; padding: 40px 20px; max-width: 1200px; margin: 0 auto; }
         .page.active { display: block; }
+        /* Search Bar Styles */
+        #searchBar { width: 100%; max-width: 400px; padding: 12px; margin: 0 auto 30px; display: block; border: 1px solid #e3d5ca; border-radius: 4px; font-size: 16px; }
         .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 35px; }
         .product-card { background: #ffffff; border-radius: 4px; padding: 15px; text-align: center; border: 1px solid #f5ebe0; transition: transform 0.3s ease; display: flex; flex-direction: column; justify-content: space-between; }
         .product-card:hover { transform: translateY(-4px); }
@@ -35,8 +36,11 @@
     </header>
 
     <div id="shop" class="page active">
+        <!-- New Search Bar -->
+        <input type="text" id="searchBar" placeholder="Search for items..." onkeyup="filterProducts()">
+        
         <div class="products-grid" id="productGrid">
-            <!-- Items typed into your dashboard will load here automatically -->
+            <!-- Items load here -->
         </div>
     </div>
 
@@ -45,201 +49,105 @@
         <p style="max-width: 600px; margin: 20px auto; text-align: center; color: #706259; line-height: 1.8;">Curating elegant, timeless styles for everyday confidence.</p>
     </div>
 
-    <!-- ========================================== -->
-    <!-- HOUDA BOUTIQUE WHATSAPP SHOPPING CART LAYER -->
-    <!-- ========================================== -->
-
     <!-- Floating Shopping Cart Button -->
-    <div id="cart-button" onclick="toggleCart()" style="position: fixed; bottom: 20px; right: 20px; background: #4a3b32; color: #fff; padding: 15px 20px; border-radius: 30px; cursor: pointer; font-weight: bold; z-index: 1000; box-shadow: 0 4px 10px rgba(0,0,0,0.2); font-family: sans-serif;">
+    <div id="cart-button" onclick="toggleCart()" style="position: fixed; bottom: 20px; right: 20px; background: #4a3b32; color: #fff; padding: 15px 20px; border-radius: 30px; cursor: pointer; font-weight: bold; z-index: 1000; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
       🛒 Cart (<span id="cart-count">0</span>)
     </div>
 
     <!-- Slide-out Cart Panel -->
-    <div id="cart-panel" style="position: fixed; top: 0; right: -400px; width: 350px; height: 100%; background: #fff; box-shadow: -5px 0 15px rgba(0,0,0,0.1); transition: 0.3s; z-index: 1001; padding: 20px; display: flex; flex-direction: column; font-family: sans-serif; box-sizing: border-box;">
+    <div id="cart-panel" style="position: fixed; top: 0; right: -400px; width: 350px; height: 100%; background: #fff; box-shadow: -5px 0 15px rgba(0,0,0,0.1); transition: 0.3s; z-index: 1001; padding: 20px; display: flex; flex-direction: column; box-sizing: border-box;">
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f5ebe0; padding-bottom: 10px;">
         <h2 style="margin:0; font-size: 20px; color: #4a3b32; font-family: Georgia, serif;">Your Cart</h2>
-        <button onclick="toggleCart()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #706259;">&times;</button>
+        <button onclick="toggleCart()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
       </div>
-      
-      <!-- Items List Container -->
       <div id="cart-items" style="flex: 1; overflow-y: auto; margin-top: 20px;"></div>
-      
-      <!-- Total breakdown and Checkout -->
-      <div style="border-top: 2px solid #f5ebe0; padding-top: 15px; font-size: 14px; color: #706259;">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-          <span>Items Subtotal:</span>
-          <span>$<span id="cart-subtotal">0.00</span></span>
-        </div>
-        <div style="display: flex; justify-content: space-between; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #e3d5ca;">
-          <span>Delivery Fee:</span>
-          <span>$<span id="cart-delivery">0.00</span></span>
-        </div>
-        <h3 style="margin:0; color: #4a3b32; font-size: 18px; display: flex; justify-content: space-between;">
-          <span>Total:</span>
-          <span>$<span id="cart-total">0.00</span></span>
-        </h3>
-        <button onclick="checkoutWhatsApp()" style="width: 100%; background: #25D366; color: white; border: none; padding: 15px; font-size: 15px; font-weight: bold; border-radius: 4px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; margin-top: 15px;">
-          Checkout via WhatsApp 💬
-        </button>
+      <div style="border-top: 2px solid #f5ebe0; padding-top: 15px;">
+        <p>Subtotal: $<span id="cart-subtotal">0.00</span></p>
+        <p>Delivery: $4.00</p>
+        <h3>Total: $<span id="cart-total">0.00</span></h3>
+        <button onclick="checkoutWhatsApp()" style="width: 100%; background: #25D366; color: white; border: none; padding: 15px; font-weight: bold; cursor: pointer;">Checkout via WhatsApp 💬</button>
       </div>
     </div>
 
     <script>
         let cart = [];
+        let allProducts = []; // Stores products for filtering
         const WHATSAPP_NUMBER = "96171474769"; 
-        const DELIVERY_FEE = 4.00; // 👈 Fixed to $4.00 delivery charge
+        const DELIVERY_FEE = 4.00;
 
-        // Reads your visual inputs straight out of your GitHub database file dynamically
         async function loadBoutiqueProducts() {
             const grid = document.getElementById('productGrid');
             try {
                 const response = await fetch('/data/clothes.json');
-                const products = await response.json();
-                grid.innerHTML = '';
-                
-                if(!products || products.length === 0) {
-                    grid.innerHTML = `<p style="text-align:center;grid-column:1/-1;color:#9c8e85;">Your collection is empty. Go to your /admin link to add items!</p>`;
-                    return;
-                }
-
-                products.forEach(product => {
-                    // Safe image check fallback
-                    let imgUrl = product.image ? product.image : 'https://via.placeholder.com/320x320?text=No+Image';
-
-                    // Clean string escaping for the click arguments
-                    let safeName = product.name.replace(/'/g, "\\'");
-                    let safeImg = imgUrl.replace(/'/g, "\\'");
-
-                    grid.innerHTML += `
-                        <div class="product-card">
-                            <img class="product-img" src="${imgUrl}" alt="${product.name}" onerror="this.src='https://via.placeholder.com/320x320?text=Error+Loading'">
-                            <h3>${product.name}</h3>
-                            <p class="price">$${product.price}</p>
-                            <button class="order-btn" onclick="addToCart('${safeName}', '${product.price}', '${safeImg}')">Add to Cart</button>
-                        </div>
-                    `;
-                });
+                allProducts = await response.json();
+                renderGrid(allProducts);
             } catch (err) {
-                grid.innerHTML = `<p style="text-align:center;grid-column:1/-1;color:#9c8e85;">Boutique initialised. Log into your dashboard at <strong>yourlink.netlify.app/admin</strong> to publish your first clothing items!</p>`;
+                grid.innerHTML = `<p style="text-align:center;">Log into <strong>/admin</strong> to publish your first items!</p>`;
             }
+        }
+
+        function renderGrid(products) {
+            const grid = document.getElementById('productGrid');
+            grid.innerHTML = '';
+            products.forEach(product => {
+                let imgUrl = product.image || 'https://via.placeholder.com/320x320?text=No+Image';
+                grid.innerHTML += `
+                    <div class="product-card">
+                        <img class="product-img" src="${imgUrl}" alt="${product.name}">
+                        <h3>${product.name}</h3>
+                        <p class="price">$${product.price}</p>
+                        <button class="order-btn" onclick="addToCart('${product.name.replace(/'/g, "\\'")}', '${product.price}', '${imgUrl}')">Add to Cart</button>
+                    </div>
+                `;
+            });
+        }
+
+        function filterProducts() {
+            const query = document.getElementById('searchBar').value.toLowerCase();
+            const filtered = allProducts.filter(p => p.name.toLowerCase().includes(query));
+            renderGrid(filtered);
         }
 
         function switchPage(pageId) {
-            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
-            document.querySelectorAll('.nav-link').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
-            if(event && event.currentTarget) {
-                event.currentTarget.classList.add('active');
-            }
+            event.currentTarget.classList.add('active');
         }
 
-        // --- CART ENGINES ---
         function toggleCart() {
-          const panel = document.getElementById('cart-panel');
-          if (panel.style.right === '0px') {
-            panel.style.right = '-400px';
-          } else {
-            panel.style.right = '0px';
+            const panel = document.getElementById('cart-panel');
+            panel.style.right = (panel.style.right === '0px') ? '-400px' : '0px';
             renderCart();
-          }
         }
 
         function addToCart(name, price, image) {
-          const existingItem = cart.find(item => item.name === name);
-          if (existingItem) {
-            existingItem.quantity += 1;
-          } else {
-            cart.push({ name, price: parseFloat(price), image, quantity: 1 });
-          }
-          updateCartBadge();
-          alert(`${name} added to cart!`);
-        }
-
-        function updateCartBadge() {
-          const count = cart.reduce((sum, item) => sum + item.quantity, 0);
-          document.getElementById('cart-count').innerText = count;
+            const existing = cart.find(i => i.name === name);
+            if (existing) existing.quantity += 1;
+            else cart.push({ name, price: parseFloat(price), image, quantity: 1 });
+            document.getElementById('cart-count').innerText = cart.reduce((s, i) => s + i.quantity, 0);
+            alert(`${name} added!`);
         }
 
         function renderCart() {
-          const container = document.getElementById('cart-items');
-          container.innerHTML = '';
-          let subtotal = 0;
-
-          if (cart.length === 0) {
-            container.innerHTML = '<p style="color: #777; text-align: center; margin-top: 40px;">Your cart is empty.</p>';
-            document.getElementById('cart-subtotal').innerText = '0.00';
-            document.getElementById('cart-delivery').innerText = '0.00';
-            document.getElementById('cart-total').innerText = '0.00';
-            return;
-          }
-
-          cart.forEach((item, index) => {
-            const itemTotal = item.price * item.quantity;
-            subtotal += itemTotal;
-
-            container.innerHTML += `
-              <div style="display: flex; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #f5ebe0; padding-bottom: 10px;">
-                <img src="${item.image}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 2px; margin-right: 10px; border: 1px solid #f5ebe0;" />
-                <div style="flex: 1;">
-                  <h4 style="margin: 0; font-size: 14px; color: #4a3b32;">${item.name}</h4>
-                  <p style="margin: 5px 0 0; color: #706259; font-size: 13px;">$${item.price.toFixed(2)} x ${item.quantity}</p>
-                </div>
-                <button onclick="removeFromCart(${index})" style="background: #ff4d4d; color: white; border: none; padding: 5px 10px; border-radius: 2px; cursor: pointer; font-size: 12px;">Remove</button>
-              </div>
-            `;
-          });
-
-          let grandTotal = subtotal + DELIVERY_FEE;
-
-          document.getElementById('cart-subtotal').innerText = subtotal.toFixed(2);
-          document.getElementById('cart-delivery').innerText = DELIVERY_FEE.toFixed(2);
-          document.getElementById('cart-total').innerText = grandTotal.toFixed(2);
-        }
-
-        function removeFromCart(index) {
-          cart.splice(index, 1);
-          renderCart();
-          updateCartBadge();
+            const container = document.getElementById('cart-items');
+            container.innerHTML = '';
+            let subtotal = 0;
+            cart.forEach((item, index) => {
+                subtotal += item.price * item.quantity;
+                container.innerHTML += `<div><h4>${item.name}</h4><p>$${item.price} x ${item.quantity}</p></div>`;
+            });
+            document.getElementById('cart-subtotal').innerText = subtotal.toFixed(2);
+            document.getElementById('cart-total').innerText = (subtotal + DELIVERY_FEE).toFixed(2);
         }
 
         function checkoutWhatsApp() {
-          if (cart.length === 0) {
-            alert("Your cart is empty!");
-            return;
-          }
-
-          let message = "🛍️ *NEW ORDER FROM HOUDA BOUTIQUE* 🛍️\n\n";
-          let subtotal = 0;
-
-          cart.forEach((item) => {
-            const itemTotal = item.price * item.quantity;
-            subtotal += itemTotal;
-            message += `▪️ *${item.name}*\n   Qty: ${item.quantity}\n   Price: $${itemTotal.toFixed(2)}\n\n`;
-          });
-
-          let grandTotal = subtotal + DELIVERY_FEE;
-
-          message += `---------------------------\n`;
-          message += `📋 *Items Subtotal:* $${subtotal.toFixed(2)}\n`;
-          message += `🚚 *Delivery Fee:* $${DELIVERY_FEE.toFixed(2)}\n`;
-          message += `💰 *TOTAL AMOUNT:* $${grandTotal.toFixed(2)}\n\n`;
-          message += `Please confirm my order and let me know the estimated delivery timeframe! ✨`;
-
-          const encodedMessage = encodeURIComponent(message);
-          const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`;
-
-          window.open(whatsappUrl, '_blank');
+            let message = "New Order:\n";
+            cart.forEach(i => message += `${i.name} (x${i.quantity}) - $${i.price * i.quantity}\n`);
+            window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message + "\nTotal: $" + (cart.reduce((s,i)=>s+(i.price*i.quantity),0)+DELIVERY_FEE))}`, '_blank');
         }
 
-        // Initialize setup
         loadBoutiqueProducts();
-
-        // Keeps secure login panel synced
-        if (window.netlifyIdentity) {
-            window.netlifyIdentity.on("init", user => {
-                if (!user) { window.netlifyIdentity.on("login", () => { document.location.reload(); }); }
-            });
-        }
     </script>
 </body>
 </html>
