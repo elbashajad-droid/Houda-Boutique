@@ -1,9 +1,15 @@
+Here is the updated code with the delivery fee permanently set to **$4.00**.
+
+Go to GitHub, edit your main `index.html` file, delete everything inside, and replace it with this exact text:
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Houda Boutique</title>
+    <!-- Secure Shopify-style login script connection -->
     <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
     <style>
         body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; background-color: #ffffff; color: #3d342e; }
@@ -35,7 +41,8 @@
 
     <div id="shop" class="page active">
         <div class="products-grid" id="productGrid">
-            </div>
+            <!-- Items typed into your dashboard will load here automatically -->
+        </div>
     </div>
 
     <div id="about" class="page">
@@ -43,21 +50,40 @@
         <p style="max-width: 600px; margin: 20px auto; text-align: center; color: #706259; line-height: 1.8;">Curating elegant, timeless styles for everyday confidence.</p>
     </div>
 
+    <!-- ========================================== -->
+    <!-- HOUDA BOUTIQUE WHATSAPP SHOPPING CART LAYER -->
+    <!-- ========================================== -->
+
+    <!-- Floating Shopping Cart Button -->
     <div id="cart-button" onclick="toggleCart()" style="position: fixed; bottom: 20px; right: 20px; background: #4a3b32; color: #fff; padding: 15px 20px; border-radius: 30px; cursor: pointer; font-weight: bold; z-index: 1000; box-shadow: 0 4px 10px rgba(0,0,0,0.2); font-family: sans-serif;">
       🛒 Cart (<span id="cart-count">0</span>)
     </div>
 
+    <!-- Slide-out Cart Panel -->
     <div id="cart-panel" style="position: fixed; top: 0; right: -400px; width: 350px; height: 100%; background: #fff; box-shadow: -5px 0 15px rgba(0,0,0,0.1); transition: 0.3s; z-index: 1001; padding: 20px; display: flex; flex-direction: column; font-family: sans-serif; box-sizing: border-box;">
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f5ebe0; padding-bottom: 10px;">
         <h2 style="margin:0; font-size: 20px; color: #4a3b32; font-family: Georgia, serif;">Your Cart</h2>
         <button onclick="toggleCart()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #706259;">&times;</button>
       </div>
       
+      <!-- Items List Container -->
       <div id="cart-items" style="flex: 1; overflow-y: auto; margin-top: 20px;"></div>
       
-      <div style="border-top: 2px solid #f5ebe0; padding-top: 20px;">
-        <h3 style="margin:0; color: #4a3b32; margin-bottom: 15px;">Total: $<span id="cart-total">0.00</span></h3>
-        <button onclick="checkoutWhatsApp()" style="width: 100%; background: #25D366; color: white; border: none; padding: 15px; font-size: 15px; font-weight: bold; border-radius: 4px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px;">
+      <!-- Total breakdown and Checkout -->
+      <div style="border-top: 2px solid #f5ebe0; padding-top: 15px; font-size: 14px; color: #706259;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+          <span>Items Subtotal:</span>
+          <span>$<span id="cart-subtotal">0.00</span></span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #e3d5ca;">
+          <span>Delivery Fee:</span>
+          <span>$<span id="cart-delivery">0.00</span></span>
+        </div>
+        <h3 style="margin:0; color: #4a3b32; font-size: 18px; display: flex; justify-content: space-between;">
+          <span>Total:</span>
+          <span>$<span id="cart-total">0.00</span></span>
+        </h3>
+        <button onclick="checkoutWhatsApp()" style="width: 100%; background: #25D366; color: white; border: none; padding: 15px; font-size: 15px; font-weight: bold; border-radius: 4px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; margin-top: 15px;">
           Checkout via WhatsApp 💬
         </button>
       </div>
@@ -66,6 +92,7 @@
     <script>
         let cart = [];
         const WHATSAPP_NUMBER = "96171474769"; 
+        const DELIVERY_FEE = 4.00; // 👈 Fixed to $4.00 delivery charge
 
         // Reads your visual inputs straight out of your GitHub database file dynamically
         async function loadBoutiqueProducts() {
@@ -141,17 +168,19 @@
         function renderCart() {
           const container = document.getElementById('cart-items');
           container.innerHTML = '';
-          let total = 0;
+          let subtotal = 0;
 
           if (cart.length === 0) {
             container.innerHTML = '<p style="color: #777; text-align: center; margin-top: 40px;">Your cart is empty.</p>';
+            document.getElementById('cart-subtotal').innerText = '0.00';
+            document.getElementById('cart-delivery').innerText = '0.00';
             document.getElementById('cart-total').innerText = '0.00';
             return;
           }
 
           cart.forEach((item, index) => {
             const itemTotal = item.price * item.quantity;
-            total += itemTotal;
+            subtotal += itemTotal;
 
             container.innerHTML += `
               <div style="display: flex; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #f5ebe0; padding-bottom: 10px;">
@@ -165,7 +194,11 @@
             `;
           });
 
-          document.getElementById('cart-total').innerText = total.toFixed(2);
+          let grandTotal = subtotal + DELIVERY_FEE;
+
+          document.getElementById('cart-subtotal').innerText = subtotal.toFixed(2);
+          document.getElementById('cart-delivery').innerText = DELIVERY_FEE.toFixed(2);
+          document.getElementById('cart-total').innerText = grandTotal.toFixed(2);
         }
 
         function removeFromCart(index) {
@@ -181,17 +214,21 @@
           }
 
           let message = "🛍️ *NEW ORDER FROM HOUDA BOUTIQUE* 🛍️\n\n";
-          let total = 0;
+          let subtotal = 0;
 
           cart.forEach((item) => {
             const itemTotal = item.price * item.quantity;
-            total += itemTotal;
+            subtotal += itemTotal;
             message += `▪️ *${item.name}*\n   Qty: ${item.quantity}\n   Price: $${itemTotal.toFixed(2)}\n\n`;
           });
 
+          let grandTotal = subtotal + DELIVERY_FEE;
+
           message += `---------------------------\n`;
-          message += `💰 *TOTAL AMOUNT:* $${total.toFixed(2)}\n\n`;
-          message += `Please let me know how you would like to arrange delivery/payment! ✨`;
+          message += `📋 *Items Subtotal:* $${subtotal.toFixed(2)}\n`;
+          message += `🚚 *Delivery Fee:* $${DELIVERY_FEE.toFixed(2)}\n`;
+          message += `💰 *TOTAL AMOUNT:* $${grandTotal.toFixed(2)}\n\n`;
+          message += `Please confirm my order and let me know the estimated delivery timeframe! ✨`;
 
           const encodedMessage = encodeURIComponent(message);
           const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`;
@@ -211,3 +248,7 @@
     </script>
 </body>
 </html>
+
+```
+
+Click **Commit changes** at the bottom of GitHub to save it!
